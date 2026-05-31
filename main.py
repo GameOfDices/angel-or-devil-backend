@@ -66,9 +66,9 @@ def stats(db: Session = Depends(database.get_db)):
         elif g == "f":
             result["countF"] += 1
             result["totalF"] += row.score
-for sin_id in row.sins:
+        for sin_id in row.sins:
             sid = str(sin_id)
             if sid not in result["sins"]:
-                result["sins"][sid] = {"m": 0, "f": 0, "d": 0}
+                result["sins"][sid] = {"m": 0, "f": 0}
             result["sins"][sid][g] = result["sins"][sid].get(g, 0) + 1
     return result
