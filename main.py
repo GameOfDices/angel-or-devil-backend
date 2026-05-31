@@ -34,7 +34,7 @@ def health():
 
 @app.post("/submit")
 def submit(data: SubmitRequest, db: Session = Depends(database.get_db)):
-    if data.gender not in ("m", "f", "d"):
+    if data.gender not in ("m", "f"):
         return {"error": "invalid gender"}
     sub = models.Submission(gender=data.gender, score=data.score, sins=data.sins)
     db.add(sub)
@@ -46,8 +46,8 @@ def submit(data: SubmitRequest, db: Session = Depends(database.get_db)):
 def stats(db: Session = Depends(database.get_db)):
     rows = db.query(models.Submission).all()
     result = {
-        "countM": 0, "countF": 0, "countD": 0,
-        "totalM": 0, "totalF": 0, "totalD": 0,
+        "countM": 0, "countF": 0,
+        "totalM": 0, "totalF": 0,
         "sins": {}
     }
     for row in rows:
@@ -58,10 +58,7 @@ def stats(db: Session = Depends(database.get_db)):
         elif g == "f":
             result["countF"] += 1
             result["totalF"] += row.score
-        elif g == "d":
-            result["countD"] += 1
-            result["totalD"] += row.score
-        for sin_id in row.sins:
+for sin_id in row.sins:
             sid = str(sin_id)
             if sid not in result["sins"]:
                 result["sins"][sid] = {"m": 0, "f": 0, "d": 0}
