@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel
 from typing import List
+import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -80,3 +81,13 @@ def stats(db: Session = Depends(database.get_db)):
                 result["sins"][sid] = {"m": 0, "f": 0}
             result["sins"][sid][g] = result["sins"][sid].get(g, 0) + 1
     return result
+
+
+@app.get("/admin/reset")
+def reset(key: str, db: Session = Depends(database.get_db)):
+    secret = os.environ.get("RESET_KEY", "")
+    if not secret or key != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    db.query(models.Submission).delete()
+    db.commit()
+    return {"ok": True, "message": "Alle Einträge gelöscht"}
