@@ -1,9 +1,12 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel
 from typing import List
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import database, models
 
 models.Base.metadata.create_all(bind=database.engine)
@@ -15,7 +18,11 @@ try:
 except Exception:
     pass
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,7 +48,8 @@ def health():
 
 
 @app.post("/submit")
-def submit(data: SubmitRequest, db: Session = Depends(database.get_db)):
+@limiter.limit("1/minute")
+def submit(request: Request, data: SubmitRequest, db: Session = Depends(database.get_db)):
     if data.gender not in ("m", "f"):
         return {"error": "invalid gender"}
     sub = models.Submission(gender=data.gender, score=data.score, sins=data.sins)
