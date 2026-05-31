@@ -1,11 +1,19 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from pydantic import BaseModel
 from typing import List
 import database, models
 
 models.Base.metadata.create_all(bind=database.engine)
+
+try:
+    with database.engine.connect() as conn:
+        conn.execute(text("ALTER TABLE submissions ALTER COLUMN score TYPE FLOAT USING score::float"))
+        conn.commit()
+except Exception:
+    pass
 
 app = FastAPI()
 
@@ -23,7 +31,7 @@ app.add_middleware(
 
 class SubmitRequest(BaseModel):
     gender: str
-    score: int
+    score: float
     sins: List[int]
 
 
